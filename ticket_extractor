@@ -1,0 +1,117 @@
+# Filename: SDFC TICKET EXTRACTOR
+# works by copying code to IDE
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By     # enables find element "By.ID"
+from selenium.webdriver.common.action_chains import ActionChains # enabled mouse Scroll
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin # enable Scroll from element
+import pandas as pd
+import os,time
+from datetime import datetime as dt
+from datetime import timedelta  # add one day for FTR
+
+
+USERNAME = "chris.cheng@spirent.com"
+PASSWORD = "P@ssw0rd112024"
+print(f'current script path {os.path.dirname(os.path.realpath(__file__))}')
+# GECKO_DRIVER_PATH = "D:\\Python363\\projects\\SFDC ticket closer\\webdriver\\geckodriver.exe"
+
+
+
+
+#launch browser
+driver = webdriver.Chrome()
+# init wait function
+wait30 = WebDriverWait(driver, 30)
+# browse to onelogin
+driver.get('https://spirent.onelogin.com')
+# wait for page to load
+wait30.until(EC.element_to_be_clickable((By.ID, 'username')))
+
+# locate username box and input username
+username_box = driver.find_element(By.ID, 'username')
+username_box.send_keys(USERNAME)
+# click Continue button
+continue_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+continue_button.click()
+
+# wait for password_box to appear
+wait30.until(EC.element_to_be_clickable((By.XPATH, "//input[@type='password']")))
+
+
+# input password
+password_box = driver.find_element(By.XPATH, "//input[@type='password']")
+password_box.send_keys(PASSWORD)
+# click Continue button
+continue_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+continue_button.click()
+
+# key in your code from onelogin token and press continue
+time.sleep(20)
+
+# wait for "skip" to appear
+driver.get('https://spirent.lightning.force.com/lightning/o/Case/list?filterName=My_Open_Service_Requests_Custom')
+
+# enter div with scrollbar
+wait30.until(EC.element_to_be_clickable((By.XPATH, "//div[@data-aura-class='uiScroller']")))
+scroller_in_div = driver.find_element(By.XPATH, "//div[@data-aura-class='uiScroller']")
+
+# scroll a number of times to the end
+for i in range(0,4):
+    scroller_in_div.send_keys(Keys.PAGE_DOWN)
+    time.sleep(1)
+
+# grab SR-number, titles and country.
+titles = driver.find_elements(By.XPATH, "//a[@data-refid='recordId']")
+titles.pop()
+
+# input into list
+titles_list = [i.text for i in titles]
+
+# # remove the company
+# find the companies available
+companies = []
+for i in range(2, len(titles_list), 3):
+    company = titles_list[i]
+    if company not in companies:
+        companies.append(company)
+
+# remove each company from the titles_list, end up with SRs and titles
+titles_list = [i for i in titles_list if i not in companies]
+
+# get SR numbers
+srs = [titles_list[i] for i in range(0, len(titles_list), 2)]
+
+# get SR title
+titles = [titles_list[i] for i in range(1, len(titles_list), 2)]
+
+# # get url of each SR
+urls = []
+for sr_no in srs:
+    xpath_1 = "//a[@title='"+ sr_no + "']"
+    url = driver.find_element(By.XPATH, xpath_1).get_property('href')
+    urls.append(url)
+
+## get CR number
+raw_crs = driver.find_elements(By.XPATH, "//span[@data-aura-class='uiOutputTextArea']")
+crs = [raw_crs[i].text for i in range(1, len(raw_crs), 4)]
+## get resolution notes
+various_output_incl_res_notes = driver.find_elements(By.XPATH, "//span[@data-aura-class='uiOutputTextArea']")
+resolution_notes = [various_output_incl_res_notes[i].text for i in range(3, len(various_output_incl_res_notes), 4)]
+
+
+if len(srs) == len(titles) == len(urls) == len(resolution_notes) == len(crs):
+    ## input each rows into df
+    df = pd.DataFrame({'number': srs, 'title': titles, 'resolution': resolution_notes, 'cr': crs, 'url':urls})
+else:
+    # print out fields and check length if the same
+    print(f'length of SRs: {len(srs)}')
+    print(f'length of titles: {len(titles)}')
+    print(f'length of urls: {len(urls)}')
+    print(f'length of resolution_notes: {len(resolution_notes)}')
+    print(f'length of crs: {len(crs)}')
+
+
+
