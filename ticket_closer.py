@@ -65,7 +65,7 @@ continue_button.click()
 time.sleep(20)
 
 # read data from csv
-df1 = pd.read_csv('tickets_1.csv')
+df1 = pd.read_csv('tickets_to_close_1.csv')
 
 # make a url:resolution_notes dictionary
 urls = df1['url'].tolist()
@@ -83,8 +83,8 @@ viewport_origin_height = int(viewport_height / 13)
 
 def click_menu_and_select_option(menu_name, option_selected, scroll_length = 100):
     # scroll to reveal target menu
-    # scroll_origin = ScrollOrigin.from_viewport(910, 56)
-    scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
+    scroll_origin = ScrollOrigin.from_viewport(910, 56)
+    # scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
     ActionChains(driver).scroll_from_origin(scroll_origin, 0, scroll_length).perform()
     # click menu to show dropdown
     menu_xpath = "//button[@aria-label='"+ menu_name + "']"
@@ -117,7 +117,7 @@ for url, res_note in url_res_dict.items():
     # Set 'Case Reason' to 'Configuration'
     click_menu_and_select_option('Case Reason', "Configuration", 200)
     # Set 'Case origin' - 'Email'
-    click_menu_and_select_option('Case Origin', "Email", 300)
+    click_menu_and_select_option('Case Origin', "Email", 200)
     # Set 'Resolution' - 'Configuration'
     click_menu_and_select_option('Resolution', "Technical Support Provided")
     # Set 'Support Level' - 'Backline APAC-India'
@@ -139,12 +139,14 @@ for url, res_note in url_res_dict.items():
         print(f'next_day_time is {next_day_date}')
         ftr_date = dt.strftime(next_day_date, '%m/%d/%Y') 
         ftr_time_1 = dt.strftime(next_day_date, '%I:%M %p')
+        ftr_time_1 = ftr_time_1.replace(minute=0, second=0, microsecond=0) # round off to nearest hour
         cfs_date_1 = dt.strftime(next_day_date, '%m/%d/%Y')
         cfs_time   = next_day_date + timedelta(hours = 5)
         cfs_time_1 = dt.strftime(cfs_time, '%I:%M %p')
     else: # just add one hour to ticket-created-time   
         ftr_date = dt.strftime(datetime_1, '%m/%d/%Y') 
         ftr_time = datetime_1 + timedelta(hours=1)
+        ftr_time = ftr_time.replace(minute=0, second=0, microsecond=0) # round off to nearest hour
         ftr_time_1 = dt.strftime(ftr_time, '%I:%M %p')
         # add one day to Customer Fix supplied
         cfs_date = datetime_1 + timedelta(days=1)
@@ -161,8 +163,11 @@ for url, res_note in url_res_dict.items():
     ftr[1].click()
     ftr[1].clear()
     ftr[1].send_keys(ftr_time_1) # fill in ftr time
+    webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform() # Esc key-press to clear drop-down box to scroll
     time.sleep(1)
-    # fill in Customer fix supplied date and time
+    ### fill in Customer fix supplied date and time
+    scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
+    ActionChains(driver).scroll_from_origin(scroll_origin, 0, 100).perform() # scroll down to reveal "customer fix supplied" box
     wait30.until(EC.element_to_be_clickable((By.XPATH, "//input[@name='Customer_Fix_Supplied__c']")))
     cfs = driver.find_elements(By.XPATH, "//input[@name='Customer_Fix_Supplied__c']")
     cfs[0].click()
