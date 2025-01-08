@@ -17,6 +17,7 @@ from datetime import timedelta  # add one day for FTR
 
 USERNAME = "chris.cheng@spirent.com"
 PASSWORD = "P@ssw0rd112024"
+CSV_FILENAME = 'tickets_to_close_20250108_1.csv'
 print(f'current script path {os.path.dirname(os.path.realpath(__file__))}')
 # GECKO_DRIVER_PATH = "D:\\Python363\\projects\\SFDC ticket closer\\webdriver\\geckodriver.exe"
 
@@ -65,7 +66,7 @@ continue_button.click()
 time.sleep(20)
 
 # read data from csv
-df1 = pd.read_csv('tickets_to_close_1.csv')
+df1 = pd.read_csv(CSV_FILENAME)
 
 # make a url:resolution_notes dictionary
 urls = df1['url'].tolist()
@@ -136,10 +137,10 @@ for url, res_note in url_res_dict.items():
         print('hour == 23')
         next_day_date = datetime_1 + timedelta(days = 1)    # set to next day date
         next_day_date = next_day_date.replace(hour = 9, minute = 0)     # set to 9am
-        print(f'next_day_time is {next_day_date}')
         ftr_date = dt.strftime(next_day_date, '%m/%d/%Y') 
-        ftr_time_1 = dt.strftime(next_day_date, '%I:%M %p')
-        ftr_time_1 = ftr_time_1.replace(minute=0, second=0, microsecond=0) # round off to nearest hour
+        print(f'next_day_date is {ftr_date}')
+        ftr_time_1 = dt.strftime(next_day_date, '%I:%M %p') # time = 9:00 AM
+        print(f'next_day_time is {ftr_time_1}')
         cfs_date_1 = dt.strftime(next_day_date, '%m/%d/%Y')
         cfs_time   = next_day_date + timedelta(hours = 5)
         cfs_time_1 = dt.strftime(cfs_time, '%I:%M %p')
@@ -166,7 +167,8 @@ for url, res_note in url_res_dict.items():
     webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform() # Esc key-press to clear drop-down box to scroll
     time.sleep(1)
     ### fill in Customer fix supplied date and time
-    scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
+    scroll_origin = ScrollOrigin.from_viewport(910, 56)
+    # scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
     ActionChains(driver).scroll_from_origin(scroll_origin, 0, 100).perform() # scroll down to reveal "customer fix supplied" box
     wait30.until(EC.element_to_be_clickable((By.XPATH, "//input[@name='Customer_Fix_Supplied__c']")))
     cfs = driver.find_elements(By.XPATH, "//input[@name='Customer_Fix_Supplied__c']")
@@ -182,7 +184,8 @@ for url, res_note in url_res_dict.items():
     cfs_button[1].click()
     time.sleep(3)
     # scroll to Resolution notes
-    scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
+    scroll_origin = ScrollOrigin.from_viewport(910, 56)
+    # scroll_origin = ScrollOrigin.from_viewport(viewport_origin_width, viewport_origin_height)
     # scroll_origin = ScrollOrigin.from_viewport(310, 83)
     ActionChains(driver).scroll_from_origin(scroll_origin, 0, 1000).perform()
     ActionChains(driver).scroll_from_origin(scroll_origin, 0, 1000).perform()
